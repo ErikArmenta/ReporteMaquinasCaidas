@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Feb 17 08:46:40 2026
+Created on Wed Feb 18 06:07:42 2026
 
 @author: acer
 """
+
+
 
 import streamlit as st
 from supabase import create_client
@@ -113,21 +115,21 @@ with tab_dash:
             # Lógica de tiempo: Usar la fecha real de la BD
             raw_date = m.get('created_at')
             if raw_date:
-                # Convertir a datetime aware UTC
-                inicio = pd.to_datetime(raw_date, utc=True)
+                # Convertimos a Pandas Timestamp forzando UTC y luego a objeto datetime nativo
+                inicio_dt = pd.to_datetime(raw_date, utc=True).to_pydatetime()
             else:
-                inicio = datetime.now(timezone.utc)
-            
-            # Convertir inicio a zona horaria local del sistema para mostrar
-            inicio_local = inicio.astimezone()
-            fmt_inicio = inicio_local.strftime("%I:%M %p | %d-%b")
+                inicio_dt = datetime.now(timezone.utc)
 
-            # Calcular diferencia contra ahora (UTC vs UTC para exactitud)
+            # Formatear la hora de inicio para mostrar en la card
+            # Usamos inicio_dt que ya es un objeto datetime de Python seguro
+            fmt_inicio = inicio_dt.strftime("%I:%M %p | %d-%b")
+
+            # Calcular diferencia contra el tiempo actual en UTC
             ahora = datetime.now(timezone.utc)
-            diff = ahora - inicio
+            diff = ahora - inicio_dt
             minutos = int(diff.total_seconds() / 60)
 
-            # Evitar negativos por desajustes de milisegundos
+            # Evitar negativos por desajustes mínimos
             if minutos < 0: minutos = 0
 
             bg, txt, icon, glow, glow_color = get_status_color(minutos)
