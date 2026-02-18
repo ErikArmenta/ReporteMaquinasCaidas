@@ -71,7 +71,7 @@ with c_logo:
     try:
         st.image("EA_2.png", width=140)
     except:
-        st.subheader("EA Innovation")
+        st.write("### EA INNOVATION")
 
 with c_title:
     st.title("Andon Monitor System")
@@ -96,11 +96,10 @@ with tab_dash:
     data_all = res.data
 
     if data_all:
-        # --- FILTRO POR ÁREA ---
-        areas_disponibles = sorted(list(set([m['area'] for m in data_all])))
-        area_seleccionada = st.selectbox("🔍 Filtrar Dashboard por Área:", ["TODAS"] + areas_disponibles)
+        # --- NUEVO: FILTRO POR ÁREA ---
+        areas_disponibles = sorted(list(set([m['area'] for m in data_all if m['area']])))
+        area_seleccionada = st.selectbox("🔍 Filtrar por Área:", ["TODAS"] + areas_disponibles)
 
-        # Aplicar filtro
         if area_seleccionada == "TODAS":
             maquinas_filtradas = data_all
         else:
@@ -111,10 +110,25 @@ with tab_dash:
         # Grid de Cards
         cols = st.columns(3)
         for i, m in enumerate(maquinas_filtradas):
-            # Lógica de tiempo robusta
+            # Lógica de tiempo: Usar la fecha real de la BD
             raw_date = m.get('created_at')
-            inicio = pd.to_datetime(raw_date).replace(tzinfo=timezone.utc) if raw_date else datetime.now(timezone.utc)
-            minutos = int((datetime.now(timezone.utc) - inicio).total_seconds() / 60)
+            if raw_date:
+                # Convertir a datetime aware UTC
+                inicio = pd.to_datetime(raw_date, utc=True)
+            else:
+                inicio = datetime.now(timezone.utc)
+            
+            # Convertir inicio a zona horaria local del sistema para mostrar
+            inicio_local = inicio.astimezone()
+            fmt_inicio = inicio_local.strftime("%I:%M %p | %d-%b")
+
+            # Calcular diferencia contra ahora (UTC vs UTC para exactitud)
+            ahora = datetime.now(timezone.utc)
+            diff = ahora - inicio
+            minutos = int(diff.total_seconds() / 60)
+
+            # Evitar negativos por desajustes de milisegundos
+            if minutos < 0: minutos = 0
 
             bg, txt, icon, glow, glow_color = get_status_color(minutos)
             notas_raw = m.get('notas_seguimiento') if m.get('notas_seguimiento') else "Sin comentarios en bitácora."
@@ -132,6 +146,8 @@ with tab_dash:
                         <h2 style="margin: 10px 0; letter-spacing: -1px;">{m['nombre_maquina']}</h2>
                         <div style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 8px; text-align: center; margin-bottom: 12px;">
                             <span style="font-size: 1.4em; font-family: monospace; font-weight: bold;">⏳ {minutos//60}h {minutos%60}m</span>
+                            <br>
+                            <span style="font-size: 0.85em; opacity: 0.9;">🕒 Inicio: {fmt_inicio}</span>
                         </div>
                         <p style="margin: 0; font-size: 0.95em;"><b>Falla:</b> {m['descripcion']}</p>
                         <p style="margin-top: 8px; font-size: 0.8em; opacity: 0.8;">🔧 {m['departamento']} | {m['responsable']}</p>
@@ -139,7 +155,6 @@ with tab_dash:
                 """, unsafe_allow_html=True)
 
                 with st.expander("📝 Gestionar Bitácora / Reparación"):
-                    # Campo para comentarios
                     nueva_nota = st.text_input("Agregar actualización:", key=f"note_{m['id']}")
                     c1, c2 = st.columns(2)
 
@@ -161,7 +176,7 @@ with tab_dash:
     else:
         st.success("🎉 Planta operando normalmente. No hay paros reportados.")
 
-# --- PESTAÑA 2: REPORTE CON FECHA RETROACTIVA ---
+# --- PESTAÑA 2: REPORTE ---
 with tab_form:
     st.subheader("📝 Registro de Incidencia")
     with st.form("form_registro", clear_on_submit=True):
@@ -179,10 +194,10 @@ with tab_form:
         with col_b:
             departamento = st.selectbox("Departamento Técnico", ["Prod Support", "Maintenance", "Quality", "Tooling"])
             descripcion = st.text_area("Descripción detallada de la falla", height=150)
-            st.warning("Nota: Al usar una fecha anterior, el sistema calculará el tiempo transcurrido desde ese momento.")
+            st.warning("Nota: Al usar una fecha anterior, el sistema calculará el tiempo acumulado correctamente.")
 
         if st.form_submit_button("🚨 REGISTRAR CAÍDA", use_container_width=True):
-            # Combinar fecha y hora
+            # Combinamos fecha y hora manual
             dt_combined = datetime.combine(f_paro, h_paro).astimezone(timezone.utc)
 
             data_insert = {
@@ -192,7 +207,7 @@ with tab_form:
                 "departamento": departamento,
                 "descripcion": descripcion,
                 "estado": "Caída",
-                "created_at": dt_combined.isoformat()
+                "created_at": dt_combined.isoformat() # Se envía la fecha retroactiva
             }
             supabase.table("maquinascaidas").insert(data_insert).execute()
             st.success(f"Reporte generado para {maquina}")
@@ -224,4 +239,5 @@ st.markdown(f"""
         <h3 style="color: #c9d1d9; margin-top: -10px;">Master Engineer Erik Armenta</h3>
         <p style="font-size: 0.8em; letter-spacing: 3px; color: #58a6ff;">EA INNOVATION</p>
     </div>
+""", unsafe_allow_html=True)
 """, unsafe_allow_html=True)
