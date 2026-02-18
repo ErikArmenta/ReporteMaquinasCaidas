@@ -240,4 +240,4 @@ st.markdown(f"""
         <p style="font-size: 0.8em; letter-spacing: 3px; color: #58a6ff;">EA INNOVATION</p>
     </div>
 """, unsafe_allow_html=True)
-""", unsafe_allow_html=True)
+
