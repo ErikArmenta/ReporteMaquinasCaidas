@@ -13,7 +13,7 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 
 # 1. Configuración de página y Estilo "Estilo Perrote"
-st.set_page_config(page_title="EA Innovation - Andon Pro", layout="wide", page_icon="🏭")
+st.set_page_config(page_title="Andon Monitor System", layout="wide", page_icon="🏭")
 
 # CSS Mejorado: Diseño Industrial Premium con Glow Animation
 st.markdown("""
@@ -242,4 +242,5 @@ st.markdown(f"""
         <p style="font-size: 0.8em; letter-spacing: 3px; color: #58a6ff;">EA INNOVATION</p>
     </div>
 """, unsafe_allow_html=True)
+
 
